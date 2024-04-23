@@ -1,10 +1,13 @@
 from flask import Flask
 import os
+from dotenv import load_dotenv
 
+load_dotenv()
 
 app = Flask(__name__)
 
-# Retrieve the PORT environment variable or use 5000 as a default
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+
 port = int(os.environ.get("PORT", 8000))
 
 
@@ -14,5 +17,4 @@ def hello_world():
 
 
 if __name__ == "__main__":
-    # Run the app on the specified port
     app.run(host="0.0.0.0", port=port)
