@@ -5,7 +5,7 @@ import os
 app = Flask(__name__)
 
 # Retrieve the PORT environment variable or use 5000 as a default
-port = int(os.environ.get("PORT", 5000))
+port = int(os.environ.get("PORT", 8000))
 
 
 @app.route("/")
