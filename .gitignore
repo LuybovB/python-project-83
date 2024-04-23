@@ -1,0 +1,6 @@
+.venv
+dist
+coverage.xml
+.coverage
+.env
+__pycache__
