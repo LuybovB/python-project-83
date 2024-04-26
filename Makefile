@@ -10,5 +10,4 @@ build:
 	poetry build
 
 dev:
-	poetry run flask --app page_analyzer:app run --port=8000
-    poetry run python -m page_analyzer.app run --port 8000
+	poetry run flask run --port 8000
