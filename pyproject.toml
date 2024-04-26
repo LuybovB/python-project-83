@@ -8,10 +8,18 @@ packages = [{include = "page_analyzer"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
-gunicorn = "^22.0.0"
 flask = "^3.0.3"
 
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.group.dev.dependencies]
+flake8 = "^6.0.0"
+pytest = "^7.2.1"
+gunicorn = "^22.0.0"
+
+
+[tool.poetry.scripts]
+page_analyzer = "page_analyzer.app:app"
