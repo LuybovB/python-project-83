@@ -20,6 +20,7 @@ build-backend = "poetry.core.masonry.api"
 flake8 = "^6.0.0"
 pytest = "^7.2.1"
 gunicorn = "^22.0.0"
+python-dotenv = "^1.0.1"
 
 
 [tool.poetry.scripts]
