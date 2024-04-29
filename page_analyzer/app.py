@@ -10,6 +10,7 @@ port = int(os.environ.get("PORT", 8000))
 
 @app.route("/")
 def index():
+    app.logger.info("Processing request to root URL")
     return "Hello, World!"
 
 
