@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template
 import os
 from dotenv import load_dotenv
 
@@ -12,7 +12,7 @@ port = int(os.environ.get("PORT", 8000))
 @app.route("/")
 def index():
     app.logger.info("Processing request to root URL")
-    return "Hello, World!"
+    return render_template("index.html")
 
 
 if __name__ == "__main__":
