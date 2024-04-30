@@ -3,4 +3,8 @@ dist
 coverage.xml
 .coverage
 .env
+poetry.lock
+log.py
+package.json
+package-lock.json
 __pycache__
