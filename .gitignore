@@ -5,6 +5,9 @@ coverage.xml
 .env
 poetry.lock
 log.py
+app.log
+wsgi.py
 package.json
 package-lock.json
+gunicorn_config.py
 __pycache__
