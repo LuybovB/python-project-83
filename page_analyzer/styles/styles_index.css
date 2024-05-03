@@ -1,0 +1,27 @@
+body {
+    background-color: #f8f9fa;
+}
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 50px;
+}
+.card {
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border: none;
+    width: 800px;
+    padding: 50px;
+    background-color: #f3f3f3;
+}
+.form-control {
+    width: 400px; /* Увеличение ширины поля ввода */
+    height: 50px; /* Увеличение высоты поля ввода */
+    font-size: 18px; /* Увеличение размера шрифта */
+    line-height: 5/* Увеличение отступа между строками */
+}
+.btn {
+    height: 50px; /* Увеличение высоты кнопки */
+    font-size: 18px; /* Увеличение размера шрифта кнопки */
+}

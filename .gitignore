@@ -7,6 +7,7 @@ poetry.lock
 log.py
 app.log
 wsgi.py
+config.py
 package.json
 package-lock.json
 gunicorn_config.py
