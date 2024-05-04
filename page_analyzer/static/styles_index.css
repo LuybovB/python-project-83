@@ -1,0 +1,28 @@
+body {
+    background-color: #f8f9fa;
+}
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 50px;
+}
+.card {
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border: none;
+    width: 800px;
+    padding: 50px;
+    background-color: #f3f3f3 !important;
+}
+.form-control {
+    width: 550px !important;
+    height: 50px !important;
+    font-size: 18px !important;
+    line-height: 5 !important;
+}
+
+.btn {
+    height: 50px !important;
+    font-size: 18px !important;
+}
