@@ -13,3 +13,4 @@ package-lock.json
 gunicorn_config.py
 __pycache__
 node_modules/
+css/
