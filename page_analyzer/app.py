@@ -104,9 +104,6 @@ def get_url(id):
     return render_template('url.html', url=url, checks=checks)
 
 
-
-
-
 @app.errorhandler(503)
 @app.errorhandler(404)
 def resource_not_found(error):
@@ -170,8 +167,12 @@ def check_url(id):
             flash('Произошла ошибка при проверке', 'danger')
         else:
             cursor.execute(
-                "INSERT INTO url_checks (url_id, created_at, status_code, h1, title, description) VALUES (%s, %s, %s, %s, %s, %s);",
-                (id, datetime.datetime.now(), site_content['status_code'], site_content['h1'], site_content['title'], site_content['description'])
+                "INSERT INTO url_checks"
+                " (url_id, created_at, status_code, h1, title, description)"
+                " VALUES (%s, %s, %s, %s, %s, %s);",
+                (id, datetime.datetime.now(), site_content['status_code'],
+                 site_content['h1'], site_content['title'],
+                 site_content['description'])
             )
             flash('Страница успешно проверена', 'success')
     connection.close()
