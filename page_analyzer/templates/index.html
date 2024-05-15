@@ -1,33 +1,13 @@
 {% extends 'default.html' %}
 {% block content %}
 <div class="row">
-    <div class="col-12 col-md-10 col-lg-8 mx-auto border rounded-3 bg-light p-5">
-        <h1 class="display-3">Анализатор страниц</h1>
-        <p class="lead">Бесплатно проверяйте сайты на SEO пригодность</p>
-
-        <form class="d-flex flex-column align-items-center" action="/urls" method="post" required="">
-            <div class="input-group mb-3">
-                <input type="text" id="urlInput" name="url" placeholder="https://www.example.com" value="{{ url|default('', true) }}" class="form-control form-control-lg">
-                <div class="input-group-append">
-                    <button class="btn btn-primary  btn-lg px-5 text-uppercase" type="submit">Проверить</button>
-                </div>
-            </div>
-            <label for="urlInput" id="urlHint" style="display: none;">Пожалуйста, введите URL</label>
-        </form>
-
-        <script>
-            document.querySelector('form').addEventListener('submit', function(event) {
-                var urlInput = document.getElementById('urlInput');
-                var urlHint = document.getElementById('urlHint');
-
-                if (!urlInput.value) {
-                    event.preventDefault();
-                    urlHint.style.display = 'block';
-                } else {
-                    urlHint.style.display = 'none';
-                }
-            });
-        </script>
-    </div>
+  <div class="col-12 col-md-10 col-lg-8 mx-auto border rounded-3 bg-light p-5">
+    <h1 class="display-3">Анализатор страниц</h1>
+    <p class="lead">Бесплатно проверяйте сайты на SEO-пригодность</p>
+    <form action="/urls " method="post" class="d-flex justify-content-center">
+    <input type="text" name="url" placeholder="https://www.example.com" value="" class="form-control form-control-lg" required>
+    <input type="submit" class="btn btn-primary  btn-lg ms-3 px-5 text-uppercase mx-3" value="Проверить">
+</form>
+  </div>
 </div>
 {% endblock %}

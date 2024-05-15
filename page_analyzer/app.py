@@ -1,7 +1,6 @@
 from flask import (
     Flask,
     render_template,
-    get_flashed_messages,
     request,
     redirect,
     flash,
@@ -10,12 +9,14 @@ from flask import (
 from dotenv import load_dotenv
 from urllib.parse import urlparse
 from psycopg2.extras import NamedTupleCursor
-from page_analyzer.validator import validate_url, normalize_url
+from page_analyzer.validator import validate_url
 from bs4 import BeautifulSoup
+
 import os
 import psycopg2
 import datetime
 import requests
+
 
 app = Flask(__name__)
 
@@ -46,17 +47,15 @@ def get_urls():
     return render_template('urls.html', urls=urls)
 
 
-
 @app.post('/urls')
 def add_url():
-    url = request.form.get('url')
-    if not url:
-        return render_template('index.html', url=url, error='Введите URL'), 422
+    url = request.form.to_dict().get('url')
 
-    error, has_error = validate_url(url)
-    if has_error:
-        flash(error, 'danger')
-        return render_template('index.html', url=url, error='Введите корректный URL'), 422
+    # Валидация URL
+    error_messages = validate_url(url)
+    if error_messages:
+        flash(error_messages[0], 'danger')
+        return render_template('index.html', url=url), 422
 
     normalized_url = normalize(url)
     connection = database_connect()
