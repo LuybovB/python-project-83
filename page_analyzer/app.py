@@ -1,44 +1,179 @@
-from flask import Flask, render_template, request
-import os
+from flask import (
+    Flask,
+    render_template,
+    get_flashed_messages,
+    request,
+    redirect,
+    flash,
+    url_for,
+    abort)
 from dotenv import load_dotenv
+from urllib.parse import urlparse
+from psycopg2.extras import NamedTupleCursor
+from page_analyzer.validator import validate_url, normalize_url
+from bs4 import BeautifulSoup
+import os
 import psycopg2
-from datetime import datetime
+import datetime
+import requests
 
-load_dotenv()
 app = Flask(__name__)
 
+load_dotenv()
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-port = int(os.environ.get("PORT", 8000))
+DATABASE_URL = os.getenv('DATABASE_URL')
 
 
-@app.route("/")
+@app.route('/')
 def index():
-    app.logger.info("Processing request to root URL")
-    return render_template("index.html")
+    return render_template('index.html')
 
 
-@app.route("/url", methods=["POST"])
+@app.route('/urls')
+def get_urls():
+    connection = database_connect()
+    with connection.cursor(cursor_factory=NamedTupleCursor) as cursor:
+        cursor.execute("""SELECT DISTINCT ON (urls.id)
+                                    urls.id,
+                                    urls.name,
+                                    url_checks.status_code,
+                                    url_checks.created_at
+                               FROM urls LEFT JOIN url_checks
+                               ON urls.id = url_checks.url_id
+                               ORDER BY urls.id DESC;""")
+        urls = cursor.fetchall()
+    connection.close()
+    return render_template('urls.html', urls=urls)
+
+
+
+@app.post('/urls')
 def add_url():
-    name = request.form['name']
-    created_at = datetime.now()
+    url = request.form.get('url')
+    if not url:
+        return render_template('index.html', url=url, error='Введите URL'), 422
 
-    conn = psycopg2.connect(
-        dbname=os.getenv('DB_NAME'),
-        user=os.getenv('DB_USER'),
-        password=os.getenv('DB_PASSWORD'),
-        host=os.getenv('DB_HOST'),
-        port=os.getenv('DB_PORT')
-    )
-    cur = conn.cursor()
+    error, has_error = validate_url(url)
+    if has_error:
+        flash(error, 'danger')
+        return render_template('index.html', url=url, error='Введите корректный URL'), 422
 
-    cur.execute("INSERT INTO urls (name, created_at) VALUES (%s, %s)", (name, created_at))
-    conn.commit()
+    normalized_url = normalize(url)
+    connection = database_connect()
+    with connection.cursor(cursor_factory=NamedTupleCursor) as cursor:
+        cursor.execute(
+            "SELECT * FROM urls WHERE name=%s;",
+            (normalized_url, )
+        )
+        existed_url = cursor.fetchone()
+        if existed_url:
+            flash('Страница уже существует', 'info')
+            current_id = existed_url.id
+        else:
+            cursor.execute(
+                "INSERT INTO urls (name, created_at) VALUES (%s, %s);",
+                (normalized_url, datetime.datetime.now())
+            )
+            cursor.execute(
+                "SELECT * FROM urls WHERE name=%s;",
+                (normalized_url, )
+            )
+            added_url = cursor.fetchone()
+            current_id = added_url.id
+            flash('Страница успешно добавлена', 'success')
+    connection.close()
+    return redirect(url_for('get_url', id=current_id), 302)
 
-    cur.close()
-    conn.close()
 
-    return "URL added successfully!"
+@app.route('/urls/<int:id>')
+def get_url(id):
+    connection = database_connect()
+    with connection.cursor(cursor_factory=NamedTupleCursor) as cursor:
+        cursor.execute(
+            "SELECT * FROM urls WHERE id=%s;",
+            (id, )
+        )
+        url = cursor.fetchone()
+        if not url:
+            abort(404, description='Страница не найдена', response=404)
+        cursor.execute(
+            "SELECT * FROM url_checks WHERE url_id=%s ORDER BY id ASC;",
+            (id,)
+        )
+        checks = cursor.fetchall()
+    connection.close()
+    return render_template('url.html', url=url, checks=checks)
 
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=port)
+
+
+
+@app.errorhandler(503)
+@app.errorhandler(404)
+def resource_not_found(error):
+    return render_template(
+        '404_not_found.html',
+        error_message=error.description
+    ), error.response
+
+
+@app.template_filter()
+def format_timestamp(datetime):
+    return datetime.strftime('%Y-%m-%d') if datetime else ''
+
+
+def database_connect():
+    try:
+        connection = psycopg2.connect(DATABASE_URL)
+        connection.autocommit = True
+        return connection
+    except psycopg2.DatabaseError or psycopg2.OperationalError:
+        abort(503, description='Ошибка доступа к базе данных', response=503)
+
+
+def normalize(url):
+    url = urlparse(url)
+    return f'{url.scheme}://{url.netloc}'
+
+
+def get_site_content(url):
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        page = BeautifulSoup(response.text, 'html.parser')
+        description = page.find('meta', attrs={'name': 'description'})
+        site_content = {
+            'status_code':
+                response.status_code,
+            'h1':
+                page.find('h1').text if page.find('h1') else '',
+            'title':
+                page.find('title').text if page.find('title') else '',
+            'description':
+                description['content'] if description else ''
+        }
+        return site_content
+    except requests.exceptions.RequestException:
+        return False
+
+
+@app.post('/urls/<int:id>/checks')
+def check_url(id):
+    connection = database_connect()
+    with connection.cursor(cursor_factory=NamedTupleCursor) as cursor:
+        cursor.execute(
+            "SELECT * FROM urls WHERE id=%s;",
+            (id, )
+        )
+        url = cursor.fetchone()
+        site_content = get_site_content(url.name)
+        if not site_content:
+            flash('Произошла ошибка при проверке', 'danger')
+        else:
+            cursor.execute(
+                "INSERT INTO url_checks (url_id, created_at, status_code, h1, title, description) VALUES (%s, %s, %s, %s, %s, %s);",
+                (id, datetime.datetime.now(), site_content['status_code'], site_content['h1'], site_content['title'], site_content['description'])
+            )
+            flash('Страница успешно проверена', 'success')
+    connection.close()
+    return redirect(url_for('get_url', id=id), 302)
