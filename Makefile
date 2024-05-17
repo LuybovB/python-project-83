@@ -7,7 +7,7 @@ install:
 	poetry install
 
 build:
-	poetry build
+	./build.sh
 
 dev:
 	poetry run flask run --port 8000
