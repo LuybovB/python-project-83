@@ -32,3 +32,23 @@ def fetch_urls(connection):
                                ON urls.id = url_checks.url_id
                                ORDER BY urls.id DESC;""")
         return cursor.fetchall()
+
+
+def get_or_create_url(connection, normalized_url):
+    with connection.cursor(cursor_factory=NamedTupleCursor) as cursor:
+        cursor.execute(
+            "SELECT id FROM urls WHERE name=%s;",
+            (normalized_url, )
+        )
+        existed_url = cursor.fetchone()
+        if existed_url:
+            flash('Страница уже существует', 'info')
+            return existed_url.id
+        else:
+            cursor.execute(
+                "INSERT INTO urls (name, created_at) VALUES (%s, %s) RETURNING id;",
+                (normalized_url, datetime.datetime.now())
+            )
+            new_url_id = cursor.fetchone().id
+            flash('Страница успешно добавлена', 'success')
+            return new_url_id

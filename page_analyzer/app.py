@@ -11,7 +11,7 @@ from urllib.parse import urlparse
 from psycopg2.extras import NamedTupleCursor
 from page_analyzer.validator import validate_url
 from bs4 import BeautifulSoup
-from .db_operations import fetch_urls
+from .db_operations import fetch_urls, get_or_create_url
 
 
 import os
@@ -43,8 +43,6 @@ def get_urls():
 @app.post('/urls')
 def add_url():
     url = request.form.to_dict().get('url')
-
-    # Валидация URL
     error_messages = validate_url(url)
     if error_messages:
         flash(error_messages[0], 'danger')
@@ -52,27 +50,7 @@ def add_url():
 
     normalized_url = normalize(url)
     connection = database_connect()
-    with connection.cursor(cursor_factory=NamedTupleCursor) as cursor:
-        cursor.execute(
-            "SELECT * FROM urls WHERE name=%s;",
-            (normalized_url, )
-        )
-        existed_url = cursor.fetchone()
-        if existed_url:
-            flash('Страница уже существует', 'info')
-            current_id = existed_url.id
-        else:
-            cursor.execute(
-                "INSERT INTO urls (name, created_at) VALUES (%s, %s);",
-                (normalized_url, datetime.datetime.now())
-            )
-            cursor.execute(
-                "SELECT * FROM urls WHERE name=%s;",
-                (normalized_url, )
-            )
-            added_url = cursor.fetchone()
-            current_id = added_url.id
-            flash('Страница успешно добавлена', 'success')
+    current_id = get_or_create_url(connection, normalized_url)
     connection.close()
     return redirect(url_for('get_url', id=current_id), 302)
 
