@@ -52,3 +52,21 @@ def get_or_create_url(connection, normalized_url):
             new_url_id = cursor.fetchone().id
             flash('Страница успешно добавлена', 'success')
             return new_url_id
+
+
+def fetch_url_by_id(connection, url_id):
+    with connection.cursor(cursor_factory=NamedTupleCursor) as cursor:
+        cursor.execute(
+            "SELECT * FROM urls WHERE id=%s;",
+            (url_id, )
+        )
+        return cursor.fetchone()
+
+
+def fetch_checks_by_url_id(connection, url_id):
+    with connection.cursor(cursor_factory=NamedTupleCursor) as cursor:
+        cursor.execute(
+            "SELECT * FROM url_checks WHERE url_id=%s ORDER BY id ASC;",
+            (url_id,)
+        )
+        return cursor.fetchall()

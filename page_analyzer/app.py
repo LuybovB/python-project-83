@@ -11,7 +11,7 @@ from urllib.parse import urlparse
 from psycopg2.extras import NamedTupleCursor
 from page_analyzer.validator import validate_url
 from bs4 import BeautifulSoup
-from .db_operations import fetch_urls, get_or_create_url
+from .db_operations import fetch_urls, get_or_create_url, fetch_url_by_id, fetch_checks_by_url_id
 
 
 import os
@@ -58,21 +58,14 @@ def add_url():
 @app.route('/urls/<int:id>')
 def get_url(id):
     connection = database_connect()
-    with connection.cursor(cursor_factory=NamedTupleCursor) as cursor:
-        cursor.execute(
-            "SELECT * FROM urls WHERE id=%s;",
-            (id, )
-        )
-        url = cursor.fetchone()
+    try:
+        url = fetch_url_by_id(connection, id)
         if not url:
-            abort(404, description='Страница не найдена', response=404)
-        cursor.execute(
-            "SELECT * FROM url_checks WHERE url_id=%s ORDER BY id ASC;",
-            (id,)
-        )
-        checks = cursor.fetchall()
-    connection.close()
-    return render_template('url.html', url=url, checks=checks)
+            abort(404, description='Страница не найдена')
+        checks = fetch_checks_by_url_id(connection, id)
+    except Exception as e:
+        # Здесь должна быть логика обработки исключений, например, логирование
+        abort(500, description='Внутренняя ошибка сервера')
 
 
 @app.errorhandler(503)
