@@ -11,6 +11,8 @@ from urllib.parse import urlparse
 from psycopg2.extras import NamedTupleCursor
 from page_analyzer.validator import validate_url
 from bs4 import BeautifulSoup
+from .queries import get_all_urls_query
+
 
 import os
 import psycopg2
@@ -33,16 +35,7 @@ def index():
 @app.route('/urls')
 def get_urls():
     connection = database_connect()
-    with connection.cursor(cursor_factory=NamedTupleCursor) as cursor:
-        cursor.execute("""SELECT DISTINCT ON (urls.id)
-                                    urls.id,
-                                    urls.name,
-                                    url_checks.status_code,
-                                    url_checks.created_at
-                               FROM urls LEFT JOIN url_checks
-                               ON urls.id = url_checks.url_id
-                               ORDER BY urls.id DESC;""")
-        urls = cursor.fetchall()
+    urls = get_all_urls_query(connection)
     connection.close()
     return render_template('urls.html', urls=urls)
 
