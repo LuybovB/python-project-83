@@ -11,12 +11,10 @@ from urllib.parse import urlparse
 from psycopg2.extras import NamedTupleCursor
 from page_analyzer.validator import validate_url
 from bs4 import BeautifulSoup
-from .queries import get_all_urls_query
-
+from .db_operations import fetch_urls, insert_url, insert_check, fetch_url_and_checks, fetch_url
 
 import os
 import psycopg2
-import datetime
 import requests
 
 
@@ -35,7 +33,7 @@ def index():
 @app.route('/urls')
 def get_urls():
     connection = database_connect()
-    urls = get_all_urls_query(connection)
+    urls = fetch_urls(connection)
     connection.close()
     return render_template('urls.html', urls=urls)
 
@@ -43,8 +41,6 @@ def get_urls():
 @app.post('/urls')
 def add_url():
     url = request.form.to_dict().get('url')
-
-    # Валидация URL
     error_messages = validate_url(url)
     if error_messages:
         flash(error_messages[0], 'danger')
@@ -52,27 +48,7 @@ def add_url():
 
     normalized_url = normalize(url)
     connection = database_connect()
-    with connection.cursor(cursor_factory=NamedTupleCursor) as cursor:
-        cursor.execute(
-            "SELECT * FROM urls WHERE name=%s;",
-            (normalized_url, )
-        )
-        existed_url = cursor.fetchone()
-        if existed_url:
-            flash('Страница уже существует', 'info')
-            current_id = existed_url.id
-        else:
-            cursor.execute(
-                "INSERT INTO urls (name, created_at) VALUES (%s, %s);",
-                (normalized_url, datetime.datetime.now())
-            )
-            cursor.execute(
-                "SELECT * FROM urls WHERE name=%s;",
-                (normalized_url, )
-            )
-            added_url = cursor.fetchone()
-            current_id = added_url.id
-            flash('Страница успешно добавлена', 'success')
+    current_id = insert_url(connection, normalized_url)
     connection.close()
     return redirect(url_for('get_url', id=current_id), 302)
 
@@ -80,20 +56,10 @@ def add_url():
 @app.route('/urls/<int:id>')
 def get_url(id):
     connection = database_connect()
-    with connection.cursor(cursor_factory=NamedTupleCursor) as cursor:
-        cursor.execute(
-            "SELECT * FROM urls WHERE id=%s;",
-            (id, )
-        )
-        url = cursor.fetchone()
-        if not url:
-            abort(404, description='Страница не найдена', response=404)
-        cursor.execute(
-            "SELECT * FROM url_checks WHERE url_id=%s ORDER BY id ASC;",
-            (id,)
-        )
-        checks = cursor.fetchall()
+    url, checks = fetch_url_and_checks(connection, id)
     connection.close()
+    if not url:
+        abort(404, description='Страница не найдена')
     return render_template('url.html', url=url, checks=checks)
 
 
@@ -103,7 +69,7 @@ def resource_not_found(error):
     return render_template(
         '404_not_found.html',
         error_message=error.description
-    ), error.response
+    ), error.code
 
 
 @app.template_filter()
@@ -116,13 +82,31 @@ def database_connect():
         connection = psycopg2.connect(DATABASE_URL)
         connection.autocommit = True
         return connection
-    except psycopg2.DatabaseError or psycopg2.OperationalError:
-        abort(503, description='Ошибка доступа к базе данных', response=503)
+    except psycopg2.DatabaseError or psycopg2.OperationalError as e:
+        abort(503, description=f'Ошибка доступа к базе данных: {e}')
 
 
 def normalize(url):
     url = urlparse(url)
     return f'{url.scheme}://{url.netloc}'
+
+
+@app.post('/urls/<int:id>/checks')
+def check_url(id):
+    connection = database_connect()
+    url = fetch_url(connection, id)
+    if not url:
+        flash('Страница не найдена', 'danger')
+        return redirect(url_for('index'))
+
+    site_content = get_site_content(url.name)
+    if not site_content:
+        flash('Произошла ошибка при проверке', 'danger')
+    else:
+        insert_check(connection, id, site_content)
+        flash('Страница успешно проверена', 'success')
+    connection.close()
+    return redirect(url_for('get_url', id=id), 302)
 
 
 def get_site_content(url):
@@ -132,41 +116,11 @@ def get_site_content(url):
         page = BeautifulSoup(response.text, 'html.parser')
         description = page.find('meta', attrs={'name': 'description'})
         site_content = {
-            'status_code':
-                response.status_code,
-            'h1':
-                page.find('h1').text if page.find('h1') else '',
-            'title':
-                page.find('title').text if page.find('title') else '',
-            'description':
-                description['content'] if description else ''
+            'status_code': response.status_code,
+            'h1': page.find('h1').text if page.find('h1') else '',
+            'title': page.find('title').text if page.find('title') else '',
+            'description': description['content'] if description else ''
         }
         return site_content
     except requests.exceptions.RequestException:
         return False
-
-
-@app.post('/urls/<int:id>/checks')
-def check_url(id):
-    connection = database_connect()
-    with connection.cursor(cursor_factory=NamedTupleCursor) as cursor:
-        cursor.execute(
-            "SELECT * FROM urls WHERE id=%s;",
-            (id, )
-        )
-        url = cursor.fetchone()
-        site_content = get_site_content(url.name)
-        if not site_content:
-            flash('Произошла ошибка при проверке', 'danger')
-        else:
-            cursor.execute(
-                "INSERT INTO url_checks"
-                " (url_id, created_at, status_code, h1, title, description)"
-                " VALUES (%s, %s, %s, %s, %s, %s);",
-                (id, datetime.datetime.now(), site_content['status_code'],
-                 site_content['h1'], site_content['title'],
-                 site_content['description'])
-            )
-            flash('Страница успешно проверена', 'success')
-    connection.close()
-    return redirect(url_for('get_url', id=id), 302)
