@@ -5,6 +5,7 @@ from flask import (
     redirect,
     flash,
     url_for,
+    current_app,
     abort)
 from dotenv import load_dotenv
 from urllib.parse import urlparse
@@ -63,9 +64,12 @@ def get_url(id):
         if not url:
             abort(404, description='Страница не найдена')
         checks = fetch_checks_by_url_id(connection, id)
+        return render_template('url.html', url=url, checks=checks)
     except Exception as e:
-        # Здесь должна быть логика обработки исключений, например, логирование
+        current_app.logger.error(f'Ошибка при получении URL или проверок: {e}')
         abort(500, description='Внутренняя ошибка сервера')
+    finally:
+        connection.close()
 
 
 @app.errorhandler(503)
