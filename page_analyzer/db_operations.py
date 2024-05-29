@@ -1,25 +1,22 @@
-from psycopg2.extras import NamedTupleCursor
-from psycopg2 import DatabaseError
+import os
+import requests
 import datetime
+from urllib.parse import urlparse
+
+from bs4 import BeautifulSoup
+from dotenv import load_dotenv
 from flask import (
     Flask,
+    abort,
+    flash,
+    redirect,
     render_template,
     request,
-    redirect,
-    flash,
     url_for,
-    abort)
-from dotenv import load_dotenv
-from urllib.parse import urlparse
-from psycopg2.extras import NamedTupleCursor
+)
 from page_analyzer.validator import validate_url
-from bs4 import BeautifulSoup
-
-
-import os
-import psycopg2
-import datetime
-import requests
+from psycopg2 import DatabaseError
+from psycopg2.extras import NamedTupleCursor
 
 
 def fetch_urls(connection):

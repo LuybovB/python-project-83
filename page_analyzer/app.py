@@ -1,25 +1,31 @@
+import os
+import requests
+import psycopg2
+from urllib.parse import urlparse
+
+from bs4 import BeautifulSoup
+from dotenv import load_dotenv
 from flask import (
     Flask,
+    abort,
+    current_app,
+    flash,
+    redirect,
     render_template,
     request,
-    redirect,
-    flash,
     url_for,
-    current_app,
-    abort)
-from dotenv import load_dotenv
-from urllib.parse import urlparse
-from psycopg2.extras import NamedTupleCursor
+)
 from page_analyzer.validator import validate_url
-from bs4 import BeautifulSoup
-from .db_operations import fetch_urls, get_or_create_url, fetch_url_by_id, fetch_checks_by_url_id, select_url, insert_url_check
+from psycopg2.extras import NamedTupleCursor
 
-
-import os
-import psycopg2
-import datetime
-import requests
-
+from .db_operations import (
+    fetch_checks_by_url_id,
+    fetch_url_by_id,
+    fetch_urls,
+    get_or_create_url,
+    insert_url_check,
+    select_url,
+)
 
 app = Flask(__name__)
 

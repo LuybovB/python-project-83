@@ -16,3 +16,4 @@ node_modules/
 css/*.css
 css/*
 !css/.gitkeep
+.idea/
