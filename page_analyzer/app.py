@@ -12,7 +12,7 @@ from urllib.parse import urlparse
 from psycopg2.extras import NamedTupleCursor
 from page_analyzer.validator import validate_url
 from bs4 import BeautifulSoup
-from .db_operations import fetch_urls, get_or_create_url, fetch_url_by_id, fetch_checks_by_url_id
+from .db_operations import fetch_urls, get_or_create_url, fetch_url_by_id, fetch_checks_by_url_id, select_url, insert_url_check
 
 
 import os
@@ -124,24 +124,24 @@ def get_site_content(url):
 @app.post('/urls/<int:id>/checks')
 def check_url(id):
     connection = database_connect()
-    with connection.cursor(cursor_factory=NamedTupleCursor) as cursor:
-        cursor.execute(
-            "SELECT * FROM urls WHERE id=%s;",
-            (id, )
-        )
-        url = cursor.fetchone()
-        site_content = get_site_content(url.name)
-        if not site_content:
-            flash('Произошла ошибка при проверке', 'danger')
-        else:
-            cursor.execute(
-                "INSERT INTO url_checks"
-                " (url_id, created_at, status_code, h1, title, description)"
-                " VALUES (%s, %s, %s, %s, %s, %s);",
-                (id, datetime.datetime.now(), site_content['status_code'],
-                 site_content['h1'], site_content['title'],
-                 site_content['description'])
-            )
-            flash('Страница успешно проверена', 'success')
-    connection.close()
+    try:
+        with connection:
+            with connection.cursor(cursor_factory=NamedTupleCursor) as cursor:
+                url = select_url(cursor, id)
+                if not url:
+                    flash('URL не найден', 'danger')
+                    return redirect(url_for('get_url', id=id), 302)
+
+                site_content = get_site_content(url.name)
+                if not site_content:
+                    flash('Произошла ошибка при проверке', 'danger')
+                else:
+                    insert_url_check(cursor, id, site_content)
+                    flash('Страница успешно проверена', 'success')
+            connection.commit()
+    except Exception as e:
+        connection.rollback()
+        flash('Произошла ошибка при работе с базой данных', 'danger')
+    finally:
+        connection.close()
     return redirect(url_for('get_url', id=id), 302)

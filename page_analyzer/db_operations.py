@@ -15,6 +15,7 @@ from psycopg2.extras import NamedTupleCursor
 from page_analyzer.validator import validate_url
 from bs4 import BeautifulSoup
 
+
 import os
 import psycopg2
 import datetime
@@ -70,3 +71,22 @@ def fetch_checks_by_url_id(connection, url_id):
             (url_id,)
         )
         return cursor.fetchall()
+
+
+def select_url(cursor, url_id):
+    cursor.execute(
+        "SELECT * FROM urls WHERE id=%s;",
+        (url_id, )
+    )
+    return cursor.fetchone()
+
+
+def insert_url_check(cursor, url_id, site_content):
+    cursor.execute(
+        "INSERT INTO url_checks"
+        " (url_id, created_at, status_code, h1, title, description)"
+        " VALUES (%s, %s, %s, %s, %s, %s);",
+        (url_id, datetime.datetime.now(), site_content['status_code'],
+         site_content['h1'], site_content['title'],
+         site_content['description'])
+    )
