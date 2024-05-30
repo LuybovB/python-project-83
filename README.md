@@ -24,5 +24,16 @@ Page Analyser — веб-сайт, который анализирует ука�
 * Отображение информации о состоянии URL, заголовке страницы, заголовке первого уровня (H1), мета-описании и дате последней проверки.
 
 
+### Установка:
+
+git clone git@github.com:alex873110/python-project-50.git, cd python-project-83, make install.
+
+#### Для локального использования:
+
+run export DATABASE_URL=postgresql://{username}:{password}@localhost:5432/{database name},
+run export SECRET_KEY={your secret key for flask app},
+run make build, run make start
+
+
 ### Демонтрация проекта:
 https://python-project-83-ef88.onrender.com
