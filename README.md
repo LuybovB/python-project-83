@@ -26,7 +26,7 @@ Page Analyser — веб-сайт, который анализирует ука�
 
 ### Установка:
 
-git clone git@github.com:alex873110/python-project-50.git, cd python-project-83, make install.
+git clone git@github.com:LuybovB/python-project-83.git, cd python-project-83, make install.
 
 #### Для локального использования:
 
