@@ -30,9 +30,9 @@ git clone git@github.com:LuybovB/python-project-83.git, cd python-project-83, ma
 
 #### Для локального использования:
 
-run export DATABASE_URL=postgresql://{username}:{password}@localhost:5432/{database name},
-run export SECRET_KEY={your secret key for flask app},
-run make build, run make start
+* run export DATABASE_URL=postgresql://{username}:{password}@localhost:5432/{database name},
+* run export SECRET_KEY={your secret key for flask app},
+* run make build, run make start
 
 
 ### Демонтрация проекта:
